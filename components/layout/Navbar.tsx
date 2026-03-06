@@ -21,7 +21,8 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bell, LogOut, Menu, User, UtensilsCrossed } from 'lucide-react';
+import { Bell, LogOut, Menu, User } from 'lucide-react';
+import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 
 interface NavbarProps {
@@ -40,27 +41,9 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps = {}) {
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <UtensilsCrossed className="h-5 w-5 text-primary" />
+          <Image src="/logo.png" alt="Openverse" width={32} height={32} className="rounded-sm" />
           <span className="text-lg font-semibold tracking-tight">MessApp</span>
         </div>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-1 md:flex">
-          <Button
-            variant={activeTab === 'expenses' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => onTabChange?.('expenses')}
-          >
-            Expenses
-          </Button>
-          <Button
-            variant={activeTab === 'complaints' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => onTabChange?.('complaints')}
-          >
-            Complaints
-          </Button>
-        </nav>
 
         {/* Right side actions */}
         <div className="flex items-center gap-2">
