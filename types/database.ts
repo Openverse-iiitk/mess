@@ -2,7 +2,16 @@ export type ExpenseCategory = 'groceries' | 'dairy' | 'utilities' | 'maintenance
 
 export type ComplaintStatus = 'pending' | 'acknowledged' | 'resolved';
 
-export type AuthorRole = 'mess';
+export type AuthorRole = 'mess' | 'admin' | 'viewer';
+
+export type UserRole = 'viewer' | 'mess' | 'admin';
+
+export interface UserProfile {
+  id: string;
+  email: string | null;
+  role: UserRole;
+  created_at: string;
+}
 
 export interface User {
   id: string;
@@ -63,15 +72,17 @@ export interface ComplaintInsert {
 export interface Comment {
   id: string;
   complaint_id: string;
+  parent_comment_id: string | null;
   comment_text: string;
   created_at: string;
-  author_id: string;
+  author_id: string | null;
   author_role: AuthorRole;
 }
 
 export interface CommentInsert {
   complaint_id: string;
   comment_text: string;
+  parent_comment_id?: string | null;
 }
 
 export interface ExpenseFilters {

@@ -58,6 +58,11 @@ export function useComplaints(statusFilter?: ComplaintStatus | 'all') {
     return updated;
   }, []);
 
+  const removeComplaint = useCallback(async (id: string) => {
+    await complaintService.deleteComplaint(id);
+    setComplaints((prev) => prev.filter((c) => c.id !== id));
+  }, []);
+
   return {
     complaints,
     loading,
@@ -65,6 +70,7 @@ export function useComplaints(statusFilter?: ComplaintStatus | 'all') {
     fetchComplaints,
     addComplaint,
     updateStatus,
+    removeComplaint,
   };
 }
 

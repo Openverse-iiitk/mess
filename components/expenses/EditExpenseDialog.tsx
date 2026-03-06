@@ -146,7 +146,7 @@ export function EditExpenseDialog({ expense, open, onOpenChange, onSuccess }: Ed
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-receipt">Receipt</Label>
+              <Label htmlFor="edit-receipt">Receipt <span className="text-xs text-muted-foreground font-normal">(Image / PDF / CSV)</span></Label>
               <div className="flex items-center gap-2">
                 <Button
                   type="button"
@@ -167,7 +167,7 @@ export function EditExpenseDialog({ expense, open, onOpenChange, onSuccess }: Ed
                 ref={fileRef}
                 id="edit-receipt"
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/gif,.pdf,text/csv,.csv"
                 className="hidden"
                 onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
               />

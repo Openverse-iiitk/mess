@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import { useComments } from '@/hooks/useComplaints';
+import { createComment, deleteComment } from '@/services/commentService';
 import { StatusBadge } from '@/components/complaints/StatusBadge';
 import { CommentThread } from '@/components/complaints/CommentThread';
 import { CommentInput } from '@/components/complaints/CommentInput';
@@ -21,21 +22,47 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { ChevronDown, ChevronUp, Monitor, MessageSquare } from 'lucide-react';
+import { ChevronDown, ChevronUp, Monitor, MessageSquare, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Complaint, ComplaintStatus } from '@/types/database';
 
 interface ComplaintCardProps {
   complaint: Complaint;
   onStatusChange: (id: string, status: ComplaintStatus) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function ComplaintCard({ complaint, onStatusChange }: ComplaintCardProps) {
-  const { isManager } = useAuth();
+export function ComplaintCard({ complaint, onStatusChange, onDelete }: ComplaintCardProps) {
+  const { isManager, isAdmin } = useAuth();
   const [expanded, setExpanded] = useState(false);
+  const [deletingComplaint, setDeletingComplaint] = useState(false);
   const { comments, loading: commentsLoading, fetchComments } = useComments(
     expanded ? complaint.id : null
   );
+
+  const handleReply = useCallback(async (text: string, parentId?: string) => {
+    await createComment({
+      complaint_id: complaint.id,
+      comment_text: text,
+      parent_comment_id: parentId ?? null,
+    });
+    fetchComments();
+  }, [complaint.id, fetchComments]);
+
+  const handleDeleteComment = useCallback(async (commentId: string) => {
+    await deleteComment(commentId);
+    fetchComments();
+  }, [fetchComments]);
+
+  async function handleDeleteComplaint() {
+    if (!onDelete) return;
+    setDeletingComplaint(true);
+    try {
+      await onDelete(complaint.id);
+    } finally {
+      setDeletingComplaint(false);
+    }
+  }
 
   return (
     <Card className="transition-colors hover:border-foreground/20">
@@ -48,6 +75,17 @@ export function ComplaintCard({ complaint, onStatusChange }: ComplaintCardProps)
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {isAdmin && onDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                onClick={handleDeleteComplaint}
+                disabled={deletingComplaint}
+              >
+                {deletingComplaint ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+              </Button>
+            )}
             {isManager ? (
               <Select
                 value={complaint.status}
@@ -90,14 +128,19 @@ export function ComplaintCard({ complaint, onStatusChange }: ComplaintCardProps)
         >
           <span className="flex items-center gap-1 text-xs">
             <MessageSquare className="h-3.5 w-3.5" />
-            {expanded ? comments.length : ''} response{comments.length !== 1 ? 's' : ''}
+            {expanded ? `${comments.length} response${comments.length !== 1 ? 's' : ''}` : 'Responses'}
           </span>
           {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </Button>
 
         {expanded && (
           <div className="space-y-3">
-            <CommentThread comments={comments} loading={commentsLoading} />
+            <CommentThread
+              comments={comments}
+              loading={commentsLoading}
+              onReply={handleReply}
+              onDelete={isAdmin ? handleDeleteComment : undefined}
+            />
             {isManager && (
               <CommentInput complaintId={complaint.id} onCommentAdded={fetchComments} />
             )}

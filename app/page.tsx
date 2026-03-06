@@ -23,6 +23,7 @@ export default function HomePage() {
     complaints,
     loading: complaintsLoading,
     updateStatus,
+    removeComplaint,
     fetchComplaints,
   } = useComplaints(statusFilter === 'all' ? undefined : statusFilter);
 
@@ -81,6 +82,7 @@ export default function HomePage() {
                     key={complaint.id}
                     complaint={complaint}
                     onStatusChange={updateStatus}
+                    onDelete={removeComplaint}
                   />
                 ))}
               </div>

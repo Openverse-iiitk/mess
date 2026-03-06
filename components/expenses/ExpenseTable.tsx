@@ -33,7 +33,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
-  Image as ImageIcon,
+  Paperclip,
   Loader2,
   ArrowUpDown,
 } from 'lucide-react';
@@ -238,7 +238,7 @@ export function ExpenseTable() {
                           size="sm"
                           onClick={() => setPreviewImage(expense.receipt_image_url)}
                         >
-                          <ImageIcon className="mr-1 h-4 w-4" />
+                          <Paperclip className="mr-1 h-4 w-4" />
                           View
                         </Button>
                       ) : (
@@ -256,7 +256,7 @@ export function ExpenseTable() {
                           <DropdownMenuContent align="end">
                             {expense.receipt_image_url && (
                               <DropdownMenuItem onClick={() => setPreviewImage(expense.receipt_image_url)}>
-                                <ImageIcon className="mr-2 h-4 w-4" />
+                                <Paperclip className="mr-2 h-4 w-4" />
                                 View Receipt
                               </DropdownMenuItem>
                             )}

@@ -95,7 +95,17 @@ export async function deleteExpense(id: string): Promise<void> {
   if (error) throw error;
 }
 
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf', 'text/csv', 'application/vnd.ms-excel'];
+const MAX_SIZE_MB = 10;
+
 export async function uploadReceipt(file: File): Promise<{ url: string; path: string }> {
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw new Error('Only images (JPG, PNG, WEBP), PDF, and CSV files are allowed.');
+  }
+  if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+    throw new Error(`File size must be under ${MAX_SIZE_MB}MB.`);
+  }
+
   const fileExt = file.name.split('.').pop();
   const fileName = `${crypto.randomUUID()}.${fileExt}`;
   const filePath = `receipts/${fileName}`;
