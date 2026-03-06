@@ -29,7 +29,7 @@ begin
   on conflict (id) do nothing;
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
@@ -136,13 +136,14 @@ create policy "Users can delete their own expenses"
   on public.expenses for delete
   using (auth.uid() = added_by);
 
--- Complaints: public read and insert, admin can delete
+-- Complaints: public read and insert (anonymous allowed), admin can delete
 alter table public.complaints enable row level security;
 
 create policy "Complaints are viewable by everyone"
   on public.complaints for select
   using (true);
 
+-- INTENTIONAL: Allow unauthenticated users to file complaints (no auth required)
 create policy "Anyone can create complaints"
   on public.complaints for insert
   with check (true);
@@ -167,6 +168,7 @@ create policy "Comments are viewable by everyone"
   on public.comments for select
   using (true);
 
+-- INTENTIONAL: Allow unauthenticated viewers to reply (anonymous comments)
 create policy "Anyone can insert comments"
   on public.comments for insert
   with check (true);
