@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-const CACHE_NAME = 'mess-app-v1';
+const CACHE_NAME = 'mess-app-v4';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -31,31 +31,38 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET and cross-origin requests
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
-  // Skip Supabase API requests
-  if (url.hostname.includes('supabase')) return;
+  // Skip Supabase API requests and all API routes (never cache)
+  if (url.hostname.includes('supabase') || url.pathname.startsWith('/api/')) {
+    return;
+  }
 
-  // Network-first for navigation, cache-first for static assets
+  // For navigation (HTML pages), always fetch fresh to respect auth state changes
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          // Don't cache HTML pages - they contain dynamic auth-dependent content
           return response;
         })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
+        .catch(() => {
+          // If offline, try to use any cached version
+          return caches.match(request).then((cached) => cached || caches.match('/'));
+        })
     );
   } else if (
     url.pathname.startsWith('/_next/static/') ||
     url.pathname.startsWith('/icons/')
   ) {
+    // Cache-first for immutable static assets (hashed filenames)
     event.respondWith(
       caches.match(request).then(
         (cached) =>
           cached ||
           fetch(request).then((response) => {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            if (response.status === 200) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            }
             return response;
           })
       )

@@ -9,18 +9,32 @@ let commentChannel: RealtimeChannel | null = null;
 export function subscribeToComplaints(
   onNewComplaint: (complaint: Record<string, unknown>) => void
 ): () => void {
-  complaintChannel = supabase
-    .channel('complaints-realtime')
-    .on(
-      'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'complaints' },
-      (payload) => {
-        onNewComplaint(payload.new);
-      }
-    )
-    .subscribe();
+  // Wrap in setTimeout to avoid blocking component render
+  const timeout = setTimeout(() => {
+    try {
+      complaintChannel = supabase
+        .channel('complaints-realtime')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'complaints' },
+          (payload) => {
+            onNewComplaint(payload.new);
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'CHANNEL_ERROR') {
+            console.warn('Failed to subscribe to complaints realtime. Manual polling will be used.');
+            complaintChannel = null;
+          }
+        });
+    } catch (error) {
+      console.error('Error setting up complaints subscription:', error);
+      complaintChannel = null;
+    }
+  }, 0);
 
   return () => {
+    clearTimeout(timeout);
     if (complaintChannel) {
       supabase.removeChannel(complaintChannel);
       complaintChannel = null;
@@ -32,23 +46,37 @@ export function subscribeToComments(
   complaintId: string,
   onNewComment: (comment: Record<string, unknown>) => void
 ): () => void {
-  commentChannel = supabase
-    .channel(`comments-${complaintId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'comments',
-        filter: `complaint_id=eq.${complaintId}`,
-      },
-      (payload) => {
-        onNewComment(payload.new);
-      }
-    )
-    .subscribe();
+  // Wrap in setTimeout to avoid blocking component render
+  const timeout = setTimeout(() => {
+    try {
+      commentChannel = supabase
+        .channel(`comments-${complaintId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'comments',
+            filter: `complaint_id=eq.${complaintId}`,
+          },
+          (payload) => {
+            onNewComment(payload.new);
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'CHANNEL_ERROR') {
+            console.warn(`Failed to subscribe to comments for complaint ${complaintId}.`);
+            commentChannel = null;
+          }
+        });
+    } catch (error) {
+      console.error('Error setting up comments subscription:', error);
+      commentChannel = null;
+    }
+  }, 0);
 
   return () => {
+    clearTimeout(timeout);
     if (commentChannel) {
       supabase.removeChannel(commentChannel);
       commentChannel = null;
@@ -59,19 +87,35 @@ export function subscribeToComments(
 export function subscribeToComplaintUpdates(
   onUpdate: (complaint: Record<string, unknown>) => void
 ): () => void {
-  const channel = supabase
-    .channel('complaint-updates')
-    .on(
-      'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'complaints' },
-      (payload) => {
-        onUpdate(payload.new);
-      }
-    )
-    .subscribe();
+  // Wrap in setTimeout to avoid blocking component render
+  const timeout = setTimeout(() => {
+    try {
+      const channel = supabase
+        .channel('complaint-updates')
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'complaints' },
+          (payload) => {
+            onUpdate(payload.new);
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'CHANNEL_ERROR') {
+            console.warn('Failed to subscribe to complaint updates.');
+          }
+        });
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } catch (error) {
+      console.error('Error setting up complaint updates subscription:', error);
+      return () => {};
+    }
+  }, 0);
 
   return () => {
-    supabase.removeChannel(channel);
+    clearTimeout(timeout);
   };
 }
 

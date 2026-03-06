@@ -3,21 +3,46 @@ import type { Complaint, ComplaintInsert, ComplaintStatus } from '@/types/databa
 
 const supabase = createClient();
 
+// Ensure session is restored from cookies before making queries
+async function ensureAuth() {
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) {
+      console.warn('Auth error during session restore:', error);
+    }
+    return user;
+  } catch (err) {
+    console.error('Error restoring auth session:', err);
+    return null;
+  }
+}
+
 export async function getComplaints(
   statusFilter?: ComplaintStatus | 'all'
 ): Promise<Complaint[]> {
-  let query = supabase
-    .from('complaints')
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    // Ensure auth session is restored before querying
+    await ensureAuth();
 
-  if (statusFilter && statusFilter !== 'all') {
-    query = query.eq('status', statusFilter);
+    let query = supabase
+      .from('complaints')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (statusFilter && statusFilter !== 'all') {
+      query = query.eq('status', statusFilter);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error('Supabase complaint query error:', error);
+      throw new Error(`Failed to fetch complaints: ${error.message}`);
+    }
+    return (data as Complaint[]) || [];
+  } catch (err) {
+    console.error('Error in getComplaints:', err);
+    throw err;
   }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data as Complaint[]) || [];
 }
 
 export async function getComplaintById(id: string): Promise<Complaint | null> {

@@ -3,50 +3,75 @@ import type { Expense, ExpenseInsert, ExpenseUpdate, ExpenseFilters, PaginationS
 
 const supabase = createClient();
 
+// Ensure session is restored from cookies before making queries
+async function ensureAuth() {
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) {
+      console.warn('Auth error during session restore:', error);
+    }
+    return user;
+  } catch (err) {
+    console.error('Error restoring auth session:', err);
+    return null;
+  }
+}
+
 export async function getExpenses(
   filters: ExpenseFilters = {},
   pagination: { page: number; pageSize: number } = { page: 1, pageSize: 20 }
 ): Promise<{ data: Expense[]; pagination: PaginationState }> {
-  let query = supabase
-    .from('expenses')
-    .select('*', { count: 'exact' });
+  try {
+    // Ensure auth session is restored before querying
+    await ensureAuth();
 
-  if (filters.category && filters.category !== 'all') {
-    query = query.eq('category', filters.category);
+    let query = supabase
+      .from('expenses')
+      .select('*', { count: 'exact' });
+
+    if (filters.category && filters.category !== 'all') {
+      query = query.eq('category', filters.category);
+    }
+
+    if (filters.dateFrom) {
+      query = query.gte('expense_date', filters.dateFrom);
+    }
+
+    if (filters.dateTo) {
+      query = query.lte('expense_date', filters.dateTo);
+    }
+
+    if (filters.search) {
+      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+    }
+
+    const sortBy = filters.sortBy || 'expense_date';
+    const sortOrder = filters.sortOrder || 'desc';
+    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+    const from = (pagination.page - 1) * pagination.pageSize;
+    const to = from + pagination.pageSize - 1;
+    query = query.range(from, to);
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error('Supabase expense query error:', error);
+      throw new Error(`Failed to fetch expenses: ${error.message}`);
+    }
+
+    return {
+      data: (data as Expense[]) || [],
+      pagination: {
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        total: count || 0,
+      },
+    };
+  } catch (err) {
+    console.error('Error in getExpenses:', err);
+    throw err;
   }
-
-  if (filters.dateFrom) {
-    query = query.gte('expense_date', filters.dateFrom);
-  }
-
-  if (filters.dateTo) {
-    query = query.lte('expense_date', filters.dateTo);
-  }
-
-  if (filters.search) {
-    query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-  }
-
-  const sortBy = filters.sortBy || 'expense_date';
-  const sortOrder = filters.sortOrder || 'desc';
-  query = query.order(sortBy, { ascending: sortOrder === 'asc' });
-
-  const from = (pagination.page - 1) * pagination.pageSize;
-  const to = from + pagination.pageSize - 1;
-  query = query.range(from, to);
-
-  const { data, error, count } = await query;
-
-  if (error) throw error;
-
-  return {
-    data: (data as Expense[]) || [],
-    pagination: {
-      page: pagination.page,
-      pageSize: pagination.pageSize,
-      total: count || 0,
-    },
-  };
 }
 
 export async function getExpenseById(id: string): Promise<Expense | null> {
