@@ -40,6 +40,16 @@ export function useExpenses(initialFilters?: ExpenseFilters) {
     const newExpense = await expenseService.createExpense(expense);
     setExpenses((prev) => [newExpense, ...prev]);
     setPagination((prev) => ({ ...prev, total: prev.total + 1 }));
+    // Notify mess managers of the new expense (fire-and-forget)
+    fetch('/api/push/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: '💰 New Expense Added',
+        body: `${expense.title} — ₹${expense.amount}`,
+        url: '/?tab=expenses',
+      }),
+    }).catch(() => {});
     return newExpense;
   }, []);
 

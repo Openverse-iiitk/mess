@@ -49,6 +49,16 @@ export function useComplaints(statusFilter?: ComplaintStatus | 'all') {
     const newComplaint = await complaintService.createComplaint(complaint);
     // Realtime will also fire, but we add immediately for optimistic UI
     setComplaints((prev) => [newComplaint, ...prev]);
+    // Notify mess managers of the new complaint (fire-and-forget)
+    fetch('/api/push/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: '📢 New Complaint',
+        body: complaint.title,
+        url: '/?tab=complaints',
+      }),
+    }).catch(() => {});
     return newComplaint;
   }, []);
 
@@ -98,7 +108,8 @@ export function useComments(complaintId: string | null) {
   useEffect(() => {
     if (!complaintId) return;
     const unsub = subscribeToComments(complaintId, (newComment) => {
-      setComments((prev) => [...prev, newComment as unknown as Comment]);
+      const nc = newComment as unknown as Comment;
+      setComments((prev) => prev.some((c) => c.id === nc.id) ? prev : [...prev, nc]);
     });
     return unsub;
   }, [complaintId]);
