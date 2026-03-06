@@ -24,6 +24,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { ChevronDown, ChevronUp, Monitor, MessageSquare, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import type { Complaint, ComplaintStatus } from '@/types/database';
 
 interface ComplaintCardProps {
@@ -53,6 +54,20 @@ export function ComplaintCard({ complaint, onStatusChange, onDelete }: Complaint
     await deleteComment(commentId);
     fetchComments();
   }, [fetchComments]);
+
+  const handleBanUser = useCallback(async (anonId: string) => {
+    try {
+      const res = await fetch('/api/admin/moderate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'ban', anon_id: anonId, reason: 'Banned by admin from comment', duration_hours: 24 }),
+      });
+      if (!res.ok) throw new Error('Failed to ban user');
+      toast.success('User banned for 24 hours');
+    } catch {
+      toast.error('Failed to ban user');
+    }
+  }, []);
 
   async function handleDeleteComplaint() {
     if (!onDelete) return;
@@ -140,10 +155,9 @@ export function ComplaintCard({ complaint, onStatusChange, onDelete }: Complaint
               loading={commentsLoading}
               onReply={handleReply}
               onDelete={isAdmin ? handleDeleteComment : undefined}
+              onBanUser={isAdmin ? handleBanUser : undefined}
             />
-            {isManager && (
-              <CommentInput complaintId={complaint.id} onCommentAdded={fetchComments} />
-            )}
+            <CommentInput complaintId={complaint.id} onCommentAdded={fetchComments} />
           </div>
         )}
       </CardFooter>

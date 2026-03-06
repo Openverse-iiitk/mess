@@ -60,6 +60,7 @@ export interface Complaint {
   created_at: string;
   created_by_ip: string | null;
   created_by_device: string | null;
+  anon_id?: string | null;
 }
 
 export interface ComplaintInsert {
@@ -77,6 +78,8 @@ export interface Comment {
   created_at: string;
   author_id: string | null;
   author_role: AuthorRole;
+  anon_id?: string | null;
+  moderation_status?: ModerationStatus;
 }
 
 export interface CommentInsert {
@@ -98,4 +101,31 @@ export interface PaginationState {
   page: number;
   pageSize: number;
   total: number;
+}
+
+// ─── Automod / Moderation Types ──────────────────────────────
+
+export type ModerationStatus = 'clean' | 'flagged' | 'blocked';
+
+export interface ModerationAction {
+  id: string;
+  anon_id: string;
+  offense_type: string;
+  severity_score: number;
+  action_taken: string;
+  muted_until: string | null;
+  reference_id: string | null;
+  reference_type: string | null;
+  details: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface AdminBan {
+  id: string;
+  identifier_type: 'anon_id' | 'ip_hash';
+  identifier_value: string;
+  reason: string | null;
+  banned_by: string | null;
+  created_at: string;
+  expires_at: string | null;
 }

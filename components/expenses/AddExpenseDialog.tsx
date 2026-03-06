@@ -6,6 +6,7 @@ import { uploadReceipt } from '@/services/expenseService';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -107,6 +108,9 @@ export function AddExpenseDialog({ onSuccess }: AddExpenseDialogProps) {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add New Expense</DialogTitle>
+          <DialogDescription className="sr-only">
+            Fill in the details of the new mess expense to add it to the records.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

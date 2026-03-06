@@ -3,6 +3,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -34,6 +35,7 @@ export function ReceiptPreview({ imageUrl, open, onOpenChange }: ReceiptPreviewP
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Receipt</DialogTitle>
+          <DialogDescription className="sr-only">Receipt preview</DialogDescription>
         </DialogHeader>
 
         {fileType === 'image' && (

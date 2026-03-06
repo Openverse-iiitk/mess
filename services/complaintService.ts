@@ -1,29 +1,14 @@
 import { createClient } from '@/lib/supabase/client';
 import type { Complaint, ComplaintInsert, ComplaintStatus } from '@/types/database';
+import { getAnonId } from '@/hooks/useAnonId';
+import type { AnalysisResult } from '@/lib/automod/types';
 
 const supabase = createClient();
-
-// Ensure session is restored from cookies before making queries
-async function ensureAuth() {
-  try {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) {
-      console.warn('Auth error during session restore:', error);
-    }
-    return user;
-  } catch (err) {
-    console.error('Error restoring auth session:', err);
-    return null;
-  }
-}
 
 export async function getComplaints(
   statusFilter?: ComplaintStatus | 'all'
 ): Promise<Complaint[]> {
   try {
-    // Ensure auth session is restored before querying
-    await ensureAuth();
-
     let query = supabase
       .from('complaints')
       .select('*')
@@ -58,18 +43,35 @@ export async function getComplaintById(id: string): Promise<Complaint | null> {
 
 export async function createComplaint(complaint: ComplaintInsert): Promise<Complaint> {
   const deviceInfo = typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown';
+  const anonId = getAnonId();
 
   const { data, error } = await supabase
     .from('complaints')
     .insert({
       ...complaint,
       created_by_device: deviceInfo,
+      anon_id: anonId || undefined,
     })
     .select()
     .single();
 
   if (error) throw error;
   return data as Complaint;
+}
+
+/** Call the server analysis endpoint for live feedback while typing */
+export async function analyzeText(text: string): Promise<AnalysisResult | null> {
+  try {
+    const res = await fetch('/api/moderation/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as AnalysisResult;
+  } catch {
+    return null;
+  }
 }
 
 export async function updateComplaintStatus(

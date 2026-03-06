@@ -6,6 +6,7 @@ import { uploadReceipt } from '@/services/expenseService';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -91,6 +92,9 @@ export function EditExpenseDialog({ expense, open, onOpenChange, onSuccess }: Ed
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit Expense</DialogTitle>
+          <DialogDescription className="sr-only">
+            Update the details of this expense record.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

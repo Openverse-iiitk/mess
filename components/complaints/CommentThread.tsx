@@ -19,6 +19,7 @@ import {
   ChevronUp,
   Shield,
   UserRound,
+  Ban,
 } from 'lucide-react';
 
 interface CommentThreadProps {
@@ -26,6 +27,7 @@ interface CommentThreadProps {
   loading: boolean;
   onReply?: (text: string, parentId?: string) => Promise<void>;
   onDelete?: (commentId: string) => Promise<void>;
+  onBanUser?: (anonId: string) => Promise<void>;
 }
 
 // Build a tree from flat comments using parent_comment_id
@@ -54,16 +56,18 @@ function buildTree(comments: Comment[]): CommentNode[] {
   return roots;
 }
 
-function CommentNode({
+function CommentNodeView({
   node,
   depth,
   onReply,
   onDelete,
+  onBanUser,
 }: {
   node: CommentNode;
   depth: number;
   onReply?: (text: string, parentId?: string) => Promise<void>;
   onDelete?: (commentId: string) => Promise<void>;
+  onBanUser?: (anonId: string) => Promise<void>;
 }) {
   const { isAdmin } = useAuth();
   const [replyOpen, setReplyOpen] = useState(false);
@@ -71,6 +75,7 @@ function CommentNode({
   const [replying, setReplying] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [banning, setBanning] = useState(false);
 
   const { comment } = node;
   const isAdminComment = comment.author_role === 'admin';
@@ -166,6 +171,21 @@ function CommentNode({
                   Delete
                 </Button>
               )}
+              {isAdmin && onBanUser && comment.anon_id && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
+                  onClick={async () => {
+                    setBanning(true);
+                    try { await onBanUser(comment.anon_id!); } finally { setBanning(false); }
+                  }}
+                  disabled={banning}
+                >
+                  {banning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Ban className="h-3 w-3 mr-1" />}
+                  Ban User
+                </Button>
+              )}
             </div>
 
             {/* Inline reply box */}
@@ -197,7 +217,7 @@ function CommentNode({
       {!collapsed && node.children.length > 0 && (
         <div className="space-y-0.5">
           {node.children.map((child) => (
-            <CommentNode key={child.comment.id} node={child} depth={depth + 1} onReply={onReply} onDelete={onDelete} />
+            <CommentNodeView key={child.comment.id} node={child} depth={depth + 1} onReply={onReply} onDelete={onDelete} onBanUser={onBanUser} />
           ))}
         </div>
       )}
@@ -205,7 +225,7 @@ function CommentNode({
   );
 }
 
-export function CommentThread({ comments, loading, onReply, onDelete }: CommentThreadProps) {
+export function CommentThread({ comments, loading, onReply, onDelete, onBanUser }: CommentThreadProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -229,7 +249,7 @@ export function CommentThread({ comments, loading, onReply, onDelete }: CommentT
     <ScrollArea className="max-h-[400px]">
       <div className="space-y-1 pr-4">
         {tree.map((node) => (
-          <CommentNode key={node.comment.id} node={node} depth={0} onReply={onReply} onDelete={onDelete} />
+          <CommentNodeView key={node.comment.id} node={node} depth={0} onReply={onReply} onDelete={onDelete} onBanUser={onBanUser} />
         ))}
       </div>
     </ScrollArea>
