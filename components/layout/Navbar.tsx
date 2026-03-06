@@ -21,7 +21,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bell, LogOut, Menu, User } from 'lucide-react';
+import { Bell, LogOut, Menu, User, Github } from 'lucide-react';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -47,6 +47,22 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps = {}) {
 
         {/* Right side actions */}
         <div className="flex items-center gap-2">
+          {/* GitHub */}
+          <Button
+            variant="ghost"
+            size="icon"
+            asChild
+            title="View on GitHub"
+          >
+            <a
+              href="https://github.com/Openverse-iiitk/mess"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Github className="h-4 w-4" />
+            </a>
+          </Button>
+
           {/* Notifications (Manager only) */}
           {isManager && (
             <DropdownMenu>
